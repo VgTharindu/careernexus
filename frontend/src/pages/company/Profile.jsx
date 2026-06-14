@@ -32,6 +32,7 @@ export default function CompanyProfile() {
   const [saving,    setSaving         ] = useState(false);
   const [uploading, setUploading      ] = useState(false);
   const [photos,    setPhotos         ] = useState([]);
+  
 
   const [form, setForm] = useState({
     companyName: '',
@@ -157,9 +158,10 @@ export default function CompanyProfile() {
           <div className="relative flex-shrink-0">
             {profile?.logoUrl ? (
               <img
-                src={`http://localhost:5000${profile.logoUrl}`}
+                src={profile.logoUrl.startsWith('http') ? profile.logoUrl : `http://localhost:5000${profile.logoUrl}`}
                 alt="Company logo"
-                className="w-24 h-24 rounded-2xl object-cover ring-2 ring-blue-500/30"
+                className="w-24 h-24 rounded-2xl object-cover"
+                style={{ border: '2px solid rgba(0,123,255,0.3)' }}
               />
             ) : (
               <Avatar name={form.companyName || 'Company'} size="xl" />
@@ -353,10 +355,10 @@ export default function CompanyProfile() {
             {photos.map((photo, idx) => (
               <div key={idx} className="relative group rounded-xl overflow-hidden aspect-square">
                 <img
-                  src={`http://localhost:5000${photo}`}
-                  alt={`Company photo ${idx + 1}`}
-                  className="w-full h-full object-cover"
-                />
+                  src={profile.profileImage.startsWith('http') ? profile.profileImage : `http://localhost:5000${profile.profileImage}`}
+                  alt="Profile"
+                  className="w-24 h-24 rounded-2xl object-cover"
+                  style={{ border: '2px solid rgba(0,123,255,0.3)' }} />
                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                   <button
                     onClick={() => handleDeletePhoto(photo)}

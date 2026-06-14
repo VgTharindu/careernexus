@@ -1,8 +1,8 @@
 // ── Helper: build full image URL ────────────────────────
 export function getImageUrl(url) {
   if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `http://localhost:5000${url}`;
+  if (url.startsWith('http')) return url; // Cloudinary or any full URL
+  return `http://localhost:5000${url}`;   // legacy local path fallback
 }
 
 export default function Avatar({ src, name, size = 'md' }) {

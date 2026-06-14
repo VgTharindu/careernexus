@@ -8,8 +8,25 @@ const {
 } = require('../controllers/applicationController');
 const { protect, allowRoles } = require('../middleware/authMiddleware');
 const multer = require('multer');
-const path   = require('path');
-const fs     = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
+
+// ── Cloudinary storage for CVs ──────────────────────────
+const cvStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'careernexus/cvs',
+    allowed_formats: ['pdf'],
+    resource_type: 'raw', // important for PDF files
+  },
+});
+
+const cvUpload = multer({
+  storage: cvStorage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+});
+
+module.exports = { cvUpload };
 
 // Create uploads folder if it doesn't exist
 const uploadDir = path.join(__dirname, '..', 'uploads');

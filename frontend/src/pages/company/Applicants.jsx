@@ -183,8 +183,10 @@ function AppCard({ app, onStatusUpdate, onViewProfile, onViewCV }) {
       {/* Student info */}
       <div className="flex items-center gap-3 mb-3">
         {p?.profileImage ? (
-          <img src={`${imageBase}${p.profileImage}`} alt={app.user?.name}
-               className="w-10 h-10 rounded-xl object-cover ring-2 ring-blue-500/20 flex-shrink-0" />
+          <img src={p.profileImage.startsWith('http') ? p.profileImage : `http://localhost:5000${p.profileImage}`}
+            alt="Profile"
+            className="w-24 h-24 rounded-2xl object-cover"
+            style={{ border: '2px solid rgba(0,123,255,0.3)' }} />
         ) : (
           <Avatar name={app.user?.name} size="sm" />
         )}

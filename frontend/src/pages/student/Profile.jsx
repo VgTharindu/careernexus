@@ -153,11 +153,12 @@ export default function StudentProfile() {
 
           {/* Avatar with upload button */}
           <div className="relative flex-shrink-0">
-            {profile?.profileImage ? (
+           {profile?.profileImage ? (
               <img
-                src={`http://localhost:5000${profile.profileImage}`}
+                src={profile.profileImage.startsWith('http') ? profile.profileImage : `http://localhost:5000${profile.profileImage}`}
                 alt="Profile"
-                className="w-24 h-24 rounded-2xl object-cover ring-2 ring-blue-500/30"
+                className="w-24 h-24 rounded-2xl object-cover"
+                style={{ border: '2px solid rgba(0,123,255,0.3)' }}
               />
             ) : (
               <Avatar name={userName} size="xl" />

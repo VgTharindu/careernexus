@@ -3,43 +3,32 @@ const router  = express.Router();
 const prisma  = require('../config/db');
 const { protect, allowRoles } = require('../middleware/authMiddleware');
 const multer  = require('multer');
-const path    = require('path');
-const fs      = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 const bcrypt  = require('bcryptjs');
 
-// ── Storage setup ───────────────────────────────────────
-const makeDir = (dir) => { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); };
-
-const logoDir   = path.join(__dirname, '..', 'uploads', 'logos');
-const photosDir = path.join(__dirname, '..', 'uploads', 'company-photos');
-makeDir(logoDir);
-makeDir(photosDir);
-
-const logoStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, logoDir),
-  filename:    (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `logo-${req.user.id}-${Date.now()}${ext}`);
-  }
+// ── Cloudinary storage for logos ────────────────────────
+const logoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'careernexus/logos',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 400, height: 400, crop: 'fill' }],
+  },
 });
 
-const photoStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, photosDir),
-  filename:    (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `photo-${req.user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
-  }
+// ── Cloudinary storage for company photos ───────────────
+const photoStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'careernexus/company-photos',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 800, height: 600, crop: 'limit' }],
+  },
 });
 
-const imageFilter = (req, file, cb) => {
-  const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-  if (allowed.includes(file.mimetype)) cb(null, true);
-  else cb(new Error('Only JPEG, PNG and WebP images allowed'), false);
-};
-
-const logoUpload  = multer({ storage: logoStorage,  fileFilter: imageFilter, limits: { fileSize: 3 * 1024 * 1024 } });
-const photoUpload = multer({ storage: photoStorage, fileFilter: imageFilter, limits: { fileSize: 3 * 1024 * 1024 } });
-
+const logoUpload  = multer({ storage: logoStorage,  limits: { fileSize: 3 * 1024 * 1024 } });
+const photoUpload = multer({ storage: photoStorage, limits: { fileSize: 3 * 1024 * 1024 } });
 // ── GET company profile ─────────────────────────────────
 router.get('/profile', protect, allowRoles('company'), async (req, res) => {
   try {
@@ -109,7 +98,7 @@ router.post(
     try {
       if (!req.file) return res.status(400).json({ message: 'No logo uploaded' });
 
-      const logoUrl = `/uploads/logos/${req.file.filename}`;
+      const logoUrl = req.file.path; // Cloudinary full URL
 
       await prisma.companyProfile.upsert({
         where:  { userId: req.user.id },
@@ -137,7 +126,6 @@ router.post(
         return res.status(400).json({ message: 'No photos uploaded' });
       }
 
-      // Get existing photos
       const existing = await prisma.companyProfile.findUnique({
         where: { userId: req.user.id }
       });
@@ -146,8 +134,9 @@ router.post(
         ? JSON.parse(existing.photos)
         : [];
 
-      const newPhotos = req.files.map(f => `/uploads/company-photos/${f.filename}`);
-      const allPhotos = [...existingPhotos, ...newPhotos].slice(0, 5); // max 5
+      // Cloudinary returns full URLs in req.files[].path
+      const newPhotos = req.files.map(f => f.path);
+      const allPhotos = [...existingPhotos, ...newPhotos].slice(0, 5);
 
       await prisma.companyProfile.upsert({
         where:  { userId: req.user.id },

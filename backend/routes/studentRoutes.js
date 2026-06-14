@@ -3,29 +3,22 @@ const router   = express.Router();
 const prisma   = require('../config/db');
 const { protect, allowRoles } = require('../middleware/authMiddleware');
 const multer   = require('multer');
-const path     = require('path');
-const fs       = require('fs');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 const bcrypt   = require('bcryptjs');
 
-// ── Local storage for profile images ───────────────────
-const imageDir = path.join(__dirname, '..', 'uploads', 'profiles');
-if (!fs.existsSync(imageDir)) fs.mkdirSync(imageDir, { recursive: true });
-
-const imageStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, imageDir),
-  filename:    (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `profile-${req.user.id}-${Date.now()}${ext}`);
-  }
+// ── Cloudinary storage for profile images ───────────────
+const imageStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'careernexus/profiles',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ width: 400, height: 400, crop: 'fill' }],
+  },
 });
 
 const imageUpload = multer({
   storage: imageStorage,
-  fileFilter: (req, file, cb) => {
-    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Only JPEG, PNG and WebP images are allowed'), false);
-  },
   limits: { fileSize: 3 * 1024 * 1024 } // 3MB
 });
 
@@ -77,6 +70,7 @@ router.put('/profile', protect, allowRoles('student'), async (req, res) => {
 });
 
 // ── UPLOAD profile image ────────────────────────────────
+// ── UPLOAD profile image ────────────────────────────────
 router.post(
   '/profile/image',
   protect,
@@ -88,7 +82,8 @@ router.post(
         return res.status(400).json({ message: 'No image uploaded' });
       }
 
-      const imageUrl = `/uploads/profiles/${req.file.filename}`;
+      // Cloudinary returns the full URL in req.file.path
+      const imageUrl = req.file.path;
 
       await prisma.studentProfile.upsert({
         where:  { userId: req.user.id },
@@ -103,7 +98,6 @@ router.post(
     }
   }
 );
-
 // ── CHANGE password ─────────────────────────────────────
 router.put('/change-password', protect, async (req, res) => {
   try {

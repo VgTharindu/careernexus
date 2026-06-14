@@ -5,20 +5,15 @@ import { X, Download, FileText, AlertCircle } from 'lucide-react';
 function buildCvUrl(cvUrl) {
   if (!cvUrl) return null;
 
-  // Already a full URL
+  // Cloudinary URL or any full URL — use directly
   if (cvUrl.startsWith('http')) return cvUrl;
 
-  // Clean web path like /uploads/cv-xxx.pdf
+  // Legacy local path — fallback for old applications
   if (cvUrl.startsWith('/uploads/')) {
     return `http://localhost:5000${cvUrl}`;
   }
 
-  // Windows absolute path — extract just the filename
-  const filename = cvUrl
-    .replace(/\\/g, '/')           // convert backslashes
-    .split('/')
-    .pop();                        // get last segment = filename
-
+  const filename = cvUrl.replace(/\\/g, '/').split('/').pop();
   return `http://localhost:5000/uploads/${filename}`;
 }
 
