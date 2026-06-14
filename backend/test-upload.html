@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Upload</title>
+</head>
+<body>
+  <h2>Test CV Upload</h2>
+
+  <form id="uploadForm">
+    <div>
+      <label>Cover Letter:</label><br>
+      <input type="text" id="coverLetter" value="I am a final year IT student" style="width:400px">
+    </div>
+    <br>
+    <div>
+      <label>CV (PDF):</label><br>
+      <input type="file" id="cvFile" accept=".pdf">
+    </div>
+    <br>
+    <button type="button" onclick="submitApplication()">Submit Application</button>
+  </form>
+
+  <br>
+  <div id="result" style="background:#f0f0f0; padding:10px; white-space:pre-wrap;"></div>
+
+  <script>
+    const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiZW1haWwiOiJrYXZ5YUB1bml2ZXJzaXR5LmxrIiwicm9sZSI6InN0dWRlbnQiLCJpYXQiOjE3Nzc4MTIxMjcsImV4cCI6MTc3ODQxNjkyN30.U637lK5Dp2RyLgveBlkb21UkR7z4NZ5OtFRXLxhQJ2A';
+
+    async function submitApplication() {
+      const coverLetter = document.getElementById('coverLetter').value;
+      const cvFile      = document.getElementById('cvFile').files[0];
+
+      if (!cvFile) {
+        alert('Please select a PDF file');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('coverLetter', coverLetter);
+      formData.append('cv', cvFile);
+
+      document.getElementById('result').textContent = 'Sending...';
+
+      try {
+        const response = await fetch('http://localhost:5000/api/applications/apply/1', {
+          method:  'POST',
+          headers: { 'Authorization': 'Bearer ' + TOKEN },
+          body:    formData
+        });
+
+        const data = await response.json();
+        document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+
+      } catch (error) {
+        document.getElementById('result').textContent = 'Error: ' + error.message;
+      }
+    }
+  </script>
+</body>
+</html>

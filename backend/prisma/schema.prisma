@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  name             String
+  email            String   @unique
+  password         String
+  role             String
+  isBanned         Boolean  @default(false)
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  studentProfile StudentProfile?
+  companyProfile CompanyProfile?
+  applications   Application[]
+  notifications  Notification[]
+}
+
+model StudentProfile {
+  id             Int     @id @default(autoincrement())
+  userId         Int     @unique
+  degree         String?
+  university     String?
+  skills         String?
+  bio            String?
+  cvUrl          String?
+  profileImage   String?
+  linkedin       String?
+  github         String?
+  jobPosition    String?
+  user           User    @relation(fields: [userId], references: [id])
+}
+
+model CompanyProfile {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @unique
+  companyName String
+  industry    String?
+  website     String?
+  logoUrl     String?
+  description String?
+  location    String?
+  size        String?
+  photos      String?
+  isApproved  Boolean @default(false)
+  user        User    @relation(fields: [userId], references: [id])
+  jobs        Job[]
+}
+
+model Job {
+  id           Int            @id @default(autoincrement())
+  title        String
+  description  String
+  skills       String?
+  jobType      String
+  stipend      String?
+  deadline     DateTime
+  isApproved   Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  companyId    Int
+  company      CompanyProfile @relation(fields: [companyId], references: [id])
+  applications Application[]
+}
+
+model Application {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  jobId       Int
+  coverLetter String?
+  cvUrl       String?
+  aiScore     Int?
+  aiFeedback  String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+  job         Job      @relation(fields: [jobId], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   @default("info")
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
