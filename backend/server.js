@@ -13,8 +13,9 @@ prisma
   const { startCronJobs } = require('./config/cronJobs');
 startCronJobs();
 
-const app = express();
-const cors = require("cors");
+const cors = require('cors');
+const path = require('path');
+
 app.use(cors({
   origin: [
     'http://localhost:5173',
@@ -22,11 +23,12 @@ app.use(cors({
     process.env.FRONTEND_URL,
   ].filter(Boolean),
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
-app.use(express.json());
-const path = require('path');
-app.use('/uploads', require('express').static(path.join(__dirname, 'uploads')));
 
+app.use(express.json());
+app.use('/uploads', require('express').static(path.join(__dirname, 'uploads')));
 app.get("/test-cloudinary", async (req, res) => {
   const { cloudinary } = require("./config/cloudinary");
   try {
