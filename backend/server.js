@@ -1,22 +1,10 @@
-const express = require("express");
-const dotenv = require("dotenv");
-
-dotenv.config();
-
-const prisma = require("./config/db");
-
-prisma
-  .$connect()
-  .then(() => console.log("Database connected successfully"))
-  .catch((err) => console.log("Database connection error:", err));
-
-  const { startCronJobs } = require('./config/cronJobs');
-startCronJobs();
+const express = require('express');
+const app     = express();          // ← app must be created FIRST
 
 const cors = require('cors');
 const path = require('path');
 
-app.use(cors({
+app.use(cors({                      // ← THEN use cors
   origin: [
     'http://localhost:5173',
     'https://careernexus-vg.vercel.app',
@@ -28,7 +16,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
-app.use('/uploads', require('express').static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.get("/test-cloudinary", async (req, res) => {
   const { cloudinary } = require("./config/cloudinary");
   try {
