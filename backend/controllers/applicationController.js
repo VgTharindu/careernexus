@@ -221,6 +221,42 @@ const updateApplicationStatus = async (req, res) => {
   }
 };
 
+const getMyApplications = async (req, res) => {
+  try {
+    const applications = await prisma.application.findMany({
+      where:   { userId: req.user.id },
+      include: {
+        job: {
+          include: {
+            company: {
+              select: {
+                id:          true,
+                companyName: true,
+                logoUrl:     true,
+                industry:    true,
+              }
+            }
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    // Parse aiFeedback JSON string for each application
+    const parsed = applications.map(app => ({
+      ...app,
+      aiFeedback: app.aiFeedback
+        ? (() => { try { return JSON.parse(app.aiFeedback); } catch { return null; } })()
+        : null
+    }));
+
+    res.status(200).json({ applications: parsed });
+  } catch (error) {
+    console.error('Get my applications error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 module.exports = {
   applyForJob,
   getMyApplications,
