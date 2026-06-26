@@ -1,70 +1,43 @@
-const express  = require('express');
-const router   = express.Router();
+const express    = require('express');
+const router     = express.Router();
+const path       = require('path');
+const multer     = require('multer');
+const cloudinary = require('../config/cloudinary');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { protect, allowRoles } = require('../middleware/authMiddleware');
 const {
   applyForJob,
   getMyApplications,
   getJobApplications,
   updateApplicationStatus
 } = require('../controllers/applicationController');
-const { protect, allowRoles } = require('../middleware/authMiddleware');
-const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-const cloudinary = require('../config/cloudinary');
 
-// ── Cloudinary storage for CVs ──────────────────────────
+// ── Cloudinary storage for CVs ───────────────────────────
 const cvStorage = new CloudinaryStorage({
-  cloudinary: cloudinary,
+  cloudinary:  cloudinary,
   params: {
-    folder: 'careernexus/cvs',
+    folder:        'careernexus/cvs',
+    resource_type: 'raw',
     allowed_formats: ['pdf'],
-    resource_type: 'raw', // important for PDF files
   },
 });
 
 const cvUpload = multer({
   storage: cvStorage,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
+  limits:  { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
-module.exports = { cvUpload };
-
-// Create uploads folder if it doesn't exist
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Local storage — save file to uploads/ folder
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `cv-${unique}.pdf`);
-  }
-});
-
-const fileFilter = (req, file, cb) => {
-  console.log('File received by multer:', file.originalname, file.mimetype);
-  if (file.mimetype === 'application/pdf') {
-    cb(null, true);
-  } else {
-    cb(new Error('Only PDF files allowed'), false);
-  }
-};
-
-const upload = multer({ storage, fileFilter });
-
-// Student routes
+// ── Routes ───────────────────────────────────────────────
+// Student applies for a job
 router.post(
   '/apply/:jobId',
   protect,
   allowRoles('student'),
-  upload.single('cv'),
+  cvUpload.single('cv'),
   applyForJob
 );
 
+// Student gets their own applications
 router.get(
   '/my-applications',
   protect,
@@ -72,7 +45,7 @@ router.get(
   getMyApplications
 );
 
-// Company routes
+// Company gets applications for a specific job
 router.get(
   '/job/:jobId',
   protect,
@@ -80,8 +53,9 @@ router.get(
   getJobApplications
 );
 
+// Company updates application status
 router.patch(
-  '/:applicationId/status',
+  '/:id/status',
   protect,
   allowRoles('company'),
   updateApplicationStatus
