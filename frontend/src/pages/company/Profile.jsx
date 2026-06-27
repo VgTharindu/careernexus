@@ -81,7 +81,21 @@ export default function CompanyProfile() {
           location: p.location || "",
           size: p.size || "",
         });
-        setPhotos(p.photos ? JSON.parse(p.photos) : []);
+
+        // Safe photos parsing — filter out any null/undefined values
+        let parsedPhotos = [];
+        if (p.photos) {
+          try {
+            const raw =
+              typeof p.photos === "string" ? JSON.parse(p.photos) : p.photos;
+            parsedPhotos = (Array.isArray(raw) ? raw : []).filter(
+              (photo) => photo && typeof photo === "string",
+            );
+          } catch {
+            parsedPhotos = [];
+          }
+        }
+        setPhotos(parsedPhotos);
       }
     } catch (err) {
       console.error(err);
@@ -159,11 +173,15 @@ export default function CompanyProfile() {
   };
 
   const handleDeletePhoto = async (photoUrl) => {
+    if (!photoUrl) return;
     try {
       const res = await api.delete("/company/profile/photos", {
         data: { photoUrl },
       });
-      setPhotos(res.data.photos || []);
+      const newPhotos = (res.data.photos || []).filter(
+        (p) => p && typeof p === "string",
+      );
+      setPhotos(newPhotos);
       addToast("Photo removed", "info");
     } catch (err) {
       addToast("Failed to remove photo", "error");
@@ -453,32 +471,37 @@ export default function CompanyProfile() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            {photos.map((photo, idx) => (
-              <div
-                key={idx}
-                className="relative group rounded-xl overflow-hidden aspect-square"
-              >
-                <img
-                  src={
-                    profile.profileImage.startsWith("http")
-                      ? profile.profileImage
-                      : `http://localhost:5000${profile.profileImage}`
-                  }
-                  alt="Profile"
-                  className="w-24 h-24 rounded-2xl object-cover"
-                  style={{ border: "2px solid rgba(0,123,255,0.3)" }}
-                />
-                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <button
-                    onClick={() => handleDeletePhoto(photo)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 transition-colors"
+            {photos
+              .filter((photo) => photo && typeof photo === "string")
+              .map((photo, idx) => {
+                const photoUrl = photo.startsWith("http")
+                  ? photo
+                  : `http://localhost:5000${photo}`;
+                return (
+                  <div
+                    key={idx}
+                    className="relative group rounded-xl overflow-hidden aspect-square"
                   >
-                    <X size={14} className="text-white" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            {photos.length < 5 && (
+                    <img
+                      src={photoUrl}
+                      alt={`Company photo ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.style.display = "none";
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        onClick={() => handleDeletePhoto(photo)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center bg-red-500 hover:bg-red-600 transition-colors"
+                      >
+                        <X size={14} className="text-white" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            {photos.filter((p) => p && typeof p === "string").length < 5 && (
               <div
                 className="border-2 border-dashed rounded-xl aspect-square flex items-center justify-center cursor-pointer transition-colors"
                 style={{ borderColor: "var(--color-border)" }}
