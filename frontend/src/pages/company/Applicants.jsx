@@ -17,8 +17,8 @@ import api from '../../utils/api';
 // ── Student profile modal ────────────────────────────────
 function StudentModal({ application, onClose }) {
   if (!application) return null;
-  const p     = application.studentProfile;
-  const user  = application.user;
+  const p     = application?.studentProfile;
+  const user  = application?.user;
 
   const imageBase = 'http://localhost:5000';
 
