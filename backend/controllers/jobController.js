@@ -244,9 +244,7 @@ const getCompanyJobs = async (req, res) => {
 
     const jobs = await prisma.job.findMany({
       where:   { companyId: companyProfile.id },
-      include: {
-        _count: { select: { applications: true } }
-      },
+      include: { _count: { select: { applications: true } } },
       orderBy: { createdAt: 'desc' }
     });
 
@@ -258,7 +256,14 @@ const getCompanyJobs = async (req, res) => {
 };
 
 
-module.exports = { createJob, getAllJobs, getJobById, updateJob, deleteJob, getCompanyJobs };
+module.exports = {
+  createJob,
+  getAllJobs,
+  getJobById,
+  updateJob,
+  deleteJob,
+  getCompanyJobs,
+};
 
 
 

@@ -9,6 +9,7 @@ import {
   Save, Plus, X, Image, Briefcase
 } from 'lucide-react';
 import api from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
 
 const COMPANY_SIZES = [
   '1-10 employees', '11-50 employees', '51-200 employees',
