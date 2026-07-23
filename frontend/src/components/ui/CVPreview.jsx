@@ -1,201 +1,78 @@
-import { useState } from 'react';
-import { X, Download, FileText, AlertCircle } from 'lucide-react';
+﻿import React, { useState } from "react";
+import { X, Download, FileText, ExternalLink } from "lucide-react";
 
-// ── Build correct URL from stored path ──────────────────
-function buildCvUrl(cvUrl) {
-  if (!cvUrl) return null;
-
-  // Cloudinary URL or any full URL — use directly
-  if (cvUrl.startsWith('http')) return cvUrl;
-
-  // Legacy local path — fallback for old applications
-  if (cvUrl.startsWith('/uploads/')) {
-    return `http://localhost:5000${cvUrl}`;
-  }
-
-  const filename = cvUrl.replace(/\\/g, '/').split('/').pop();
-  return `http://localhost:5000/uploads/${filename}`;
+function buildUrl(u) {
+  if (!u) return null;
+  if (u.startsWith("http")) return u;
+  if (u.startsWith("/uploads/")) return "http://localhost:5000" + u;
+  const fn = u.replace(/\\/g, "/").split("/").pop();
+  return "http://localhost:5000/uploads/" + fn;
 }
 
 export default function CVPreview({ cvUrl, onClose, studentName }) {
-  const [loadError, setLoadError] = useState(false);
-  const [loaded,    setLoaded   ] = useState(false);
-
+  const [google, setGoogle] = useState(true);
   if (!cvUrl) return null;
 
-  const fullUrl = buildCvUrl(cvUrl);
+  const url   = buildUrl(cvUrl);
+  const gurl  = "https://docs.google.com/viewer?url=" + encodeURIComponent(url) + "&embedded=true";
+  const src   = google ? gurl : url;
+  const label = studentName ? studentName + " CV" : "CV Preview";
+  const fname = (studentName || "CV").replace(/\s+/g, "_") + "_CV.pdf";
 
-  // Google Docs viewer URL as fallback for iframe
-  const googleViewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+  async function handleDownload() {
+    try {
+      const res  = await fetch(url);
+      const blob = await res.blob();
+      const a    = document.createElement("a");
+      a.href     = URL.createObjectURL(blob);
+      a.download = fname;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(a.href);
+    } catch(e) {
+      window.open(url, "_blank");
+    }
+  }
+
+  const ov  = { position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.85)", display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" };
+  const md  = { width:"100%", maxWidth:"900px", maxHeight:"90vh", display:"flex", flexDirection:"column", borderRadius:"16px", overflow:"hidden", background:"var(--color-bg-card)", border:"1px solid var(--color-border)" };
+  const hd  = { display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", borderBottom:"1px solid var(--color-border)" };
+  const rw  = { display:"flex", alignItems:"center", gap:"8px" };
+  const b1  = { padding:"6px 12px", borderRadius:"8px", fontSize:"12px", fontWeight:"500", cursor:"pointer", border:"none", background:"rgba(0,123,255,0.1)", color:"#007BFF" };
+  const b2  = { padding:"6px 12px", borderRadius:"8px", fontSize:"12px", fontWeight:"500", cursor:"pointer", border:"none", display:"flex", alignItems:"center", gap:"4px", background:"linear-gradient(135deg,#007BFF,#00CCCC)", color:"white" };
+  const lk  = { padding:"6px 12px", borderRadius:"8px", fontSize:"12px", fontWeight:"500", textDecoration:"none", display:"flex", alignItems:"center", gap:"4px", background:"rgba(0,123,255,0.1)", color:"#007BFF" };
+  const bx  = { padding:"6px", borderRadius:"8px", border:"none", cursor:"pointer", background:"transparent", color:"var(--color-text-muted)" };
+  const fr  = { flex:1, minHeight:"580px", border:"none", display:"block", background:"#111" };
+  const ft  = { padding:"8px 20px", borderTop:"1px solid var(--color-border)", fontSize:"12px", color:"var(--color-text-muted)" };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.85)' }}
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-4xl flex flex-col rounded-2xl overflow-hidden fade-in"
-        style={{
-          background:  'var(--color-bg-card)',
-          border:      '1px solid var(--color-border)',
-          maxHeight:   '90vh',
-        }}
-        onClick={e => e.stopPropagation()}
-      >
-
-        {/* ── Header ─────────────────────────────────────── */}
-        <div
-          className="flex items-center justify-between px-5 py-3 flex-shrink-0"
-          style={{ borderBottom: '1px solid var(--color-border)' }}
-        >
-          <div className="flex items-center gap-2">
-            <FileText size={18} style={{ color: '#007BFF' }} />
-            <span
-              className="font-semibold text-sm"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              {studentName ? `${studentName}'s CV` : 'CV Preview'}
-            </span>
+    <div onClick={onClose} style={ov}>
+      <div onClick={e => e.stopPropagation()} style={md}>
+        <div style={hd}>
+          <div style={rw}>
+            <FileText size={18} color="#007BFF" />
+            <span style={{ fontWeight:600, fontSize:"14px", color:"var(--color-text-primary)" }}>{label}</span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Direct open in new tab */}
-            <a
-              href={fullUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                background: 'rgba(0,123,255,0.08)',
-                color:      '#007BFF',
-                border:     '1px solid rgba(0,123,255,0.2)',
-              }}
-            >
-              <FileText size={13} />
-              Open in Tab
+          <div style={rw}>
+            <button onClick={() => setGoogle(!google)} style={b1}>
+              {google ? "Direct View" : "Google Viewer"}
+            </button>
+            <a href={url} target="_blank" rel="noreferrer" style={lk}>
+              <ExternalLink size={12} />
+              Open Tab
             </a>
-
-            {/* Download */}
-            <a
-              href={fullUrl}
-              download={studentName ? `${studentName}_CV.pdf` : 'CV.pdf'}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                background: 'linear-gradient(135deg, #007BFF, #00CCCC)',
-                color:      'white',
-              }}
-            >
-              <Download size={13} />
+            <button onClick={handleDownload} style={b2}>
+              <Download size={12} />
               Download CV
-            </a>
-
-            <button
-              onClick={onClose}
-              className="p-1.5 rounded-lg hover:opacity-70 transition-opacity"
-              style={{ color: 'var(--color-text-muted)' }}
-            >
+            </button>
+            <button onClick={onClose} style={bx}>
               <X size={18} />
             </button>
           </div>
         </div>
-
-        {/* ── PDF Viewer ──────────────────────────────────── */}
-        <div
-          className="flex-1 relative"
-          style={{ minHeight: '500px', background: '#1a1a2e' }}
-        >
-          {/* Loading state */}
-          {!loaded && !loadError && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center">
-                <div
-                  className="w-10 h-10 border-2 border-t-blue-500 rounded-full animate-spin mx-auto mb-3"
-                  style={{ borderColor: 'rgba(0,123,255,0.2)', borderTopColor: '#007BFF' }}
-                />
-                <p className="text-sm" style={{ color: 'var(--color-text-muted)' }}>
-                  Loading CV...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Error state */}
-          {loadError && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center p-8">
-                <AlertCircle size={40} className="mx-auto mb-3"
-                             style={{ color: '#FF4444' }} />
-                <h3
-                  className="font-semibold mb-2"
-                  style={{ color: 'var(--color-text-primary)' }}
-                >
-                  Cannot preview this CV
-                </h3>
-                <p
-                  className="text-sm mb-4"
-                  style={{ color: 'var(--color-text-muted)' }}
-                >
-                  The file may have been uploaded before the URL fix. Use the buttons above to open or download.
-                </p>
-                <div className="flex gap-3 justify-center">
-                  <a
-                    href={fullUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="px-4 py-2 rounded-xl text-sm font-medium"
-                    style={{
-                      background: 'linear-gradient(135deg, #007BFF, #00CCCC)',
-                      color:      'white',
-                    }}
-                  >
-                    Open in New Tab
-                  </a>
-                  <a
-                    href={fullUrl}
-                    download
-                    className="px-4 py-2 rounded-xl text-sm font-medium"
-                    style={{
-                      background: 'var(--color-bg-hover)',
-                      color:      'var(--color-text-primary)',
-                      border:     '1px solid var(--color-border)',
-                    }}
-                  >
-                    Download
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* PDF iframe */}
-          <iframe
-            src={fullUrl}
-            title="CV Preview"
-            className="w-full"
-            style={{
-              height:     '600px',
-              border:     'none',
-              display:    loadError ? 'none' : 'block',
-              opacity:    loaded ? 1 : 0,
-              transition: 'opacity 0.3s ease',
-            }}
-            onLoad={() => setLoaded(true)}
-            onError={() => setLoadError(true)}
-          />
-        </div>
-
-        {/* ── Footer hint ─────────────────────────────────── */}
-        <div
-          className="px-5 py-2 flex-shrink-0 text-xs"
-          style={{
-            borderTop: '1px solid var(--color-border)',
-            color:     'var(--color-text-muted)',
-          }}
-        >
-          If the preview is blank, click <strong>Open in Tab</strong> or <strong>Download CV</strong> above.
-        </div>
-
+        <iframe key={src} src={src} title="CV" style={fr} />
+        <div style={ft}>If blank, click Google Viewer or Open Tab above.</div>
       </div>
     </div>
   );

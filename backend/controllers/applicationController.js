@@ -151,63 +151,98 @@ const getJobApplications = async (req, res) => {
 // ── Update application status (company) ─────────────────
 const updateApplicationStatus = async (req, res) => {
   try {
-    const { status }    = req.body;
-    const applicationId = parseInt(req.params.applicationId);
+    const { id }     = req.params;
+    const { status } = req.body;
 
-    const validStatuses = ['pending', 'shortlisted', 'rejected', 'hired'];
+    const validStatuses = ['pending', 'shortlisted', 'hired', 'rejected'];
     if (!validStatuses.includes(status)) {
-      return res.status(400).json({
-        message: 'Status must be pending, shortlisted, rejected or hired'
-      });
+      return res.status(400).json({ message: 'Invalid status value' });
     }
 
+    // ── Fetch application WITH job and company included ──
     const application = await prisma.application.findUnique({
-      where:   { id: applicationId },
-      include: { job: { include: { company: true } } }
+      where:   { id: parseInt(id) },
+      include: {
+        job: {
+          include: {
+            company: {
+              select: { companyName: true }
+            }
+          }
+        },
+        user: {
+          select: { id: true, name: true, email: true }
+        }
+      }
     });
 
     if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
 
-    if (application.job.company.userId !== req.user.id) {
-      return res.status(403).json({
-        message: 'Not authorized to update this application'
-      });
-    }
-
+    // ── Update the status ──────────────────────────────
     const updated = await prisma.application.update({
-      where: { id: applicationId },
+      where: { id: parseInt(id) },
       data:  { status }
     });
 
-    // Send status update email to student
-    try {
-      const student = await prisma.user.findUnique({
-        where:  { id: application.userId },
-        select: { name: true, email: true }
-      });
+    // ── In-app notification ────────────────────────────
+    const companyName = application.job?.company?.companyName || 'the company';
+    const jobTitle    = application.job?.title || 'the position';
 
-      await sendStatusUpdate(
-        student.email,
-        student.name,
-        application.job.title,
-        application.job.company.companyName,
-        status
-      );
-    } catch (emailError) {
-      console.error('Status email failed:', emailError.message);
-    }
-
-    // Create in-app notification
     const messages = {
-      shortlisted: `Congratulations! You have been shortlisted for ${application.job.title} at ${application.job.company.companyName}`,
-      hired:       `You have been hired for ${application.job.title} at ${application.job.company.companyName}!`,
-      rejected:    `Your application for ${application.job.title} at ${application.job.company.companyName} was not successful this time`,
+      shortlisted: `Congratulations! You have been shortlisted for ${jobTitle} at ${companyName}.`,
+      hired:       `Great news! You have been hired for ${jobTitle} at ${companyName}!`,
+      rejected:    `Your application for ${jobTitle} at ${companyName} was not successful this time. Keep trying!`,
     };
 
     if (messages[status]) {
-      await createNotification(application.userId, messages[status], status === 'hired' ? 'success' : status === 'shortlisted' ? 'info' : 'warning');
+      try {
+        await createNotification(
+          application.userId,
+          messages[status],
+          status === 'hired' ? 'success' : status === 'shortlisted' ? 'info' : 'warning'
+        );
+      } catch (notifErr) {
+        console.error('Notification error (non-fatal):', notifErr.message);
+      }
+    }
+
+    // ── Email notification ─────────────────────────────
+    if (application.user?.email && messages[status]) {
+      try {
+        const nodemailer  = require('nodemailer');
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+        await transporter.sendMail({
+          from:    `"CareerNexus" <${process.env.EMAIL_USER}>`,
+          to:      application.user.email,
+          subject: `Application Update — ${jobTitle}`,
+          html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+              <div style="background:linear-gradient(135deg,#001F3F,#003366);padding:24px;border-radius:12px;margin-bottom:20px;text-align:center;">
+                <h1 style="color:#00CCCC;margin:0;font-size:24px;">CareerNexus</h1>
+                <p style="color:#94A3B8;margin:6px 0 0;font-size:13px;">Smarter Hiring. Better Futures.</p>
+              </div>
+              <h2 style="color:#1E293B;">Application Status Update</h2>
+              <p style="color:#475569;">Hello <strong>${application.user.name}</strong>,</p>
+              <p style="color:#475569;">${messages[status]}</p>
+              <div style="margin:24px 0;padding:16px;background:#F0F8FF;border-radius:8px;border-left:4px solid #007BFF;">
+                <p style="margin:0;color:#1E293B;font-size:14px;">
+                  <strong>Position:</strong> ${jobTitle}<br>
+                  <strong>Company:</strong> ${companyName}<br>
+                  <strong>Status:</strong> <span style="color:${status==='hired'?'#00C853':status==='shortlisted'?'#007BFF':'#FF4444'};font-weight:bold;text-transform:capitalize;">${status}</span>
+                </p>
+              </div>
+              <p style="color:#94A3B8;font-size:12px;">Login to CareerNexus to view your full application history.</p>
+            </div>
+          `
+        });
+      } catch (emailErr) {
+        console.error('Email error (non-fatal):', emailErr.message);
+      }
     }
 
     res.status(200).json({
@@ -217,7 +252,7 @@ const updateApplicationStatus = async (req, res) => {
 
   } catch (error) {
     console.error('Update status error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error: ' + error.message });
   }
 };
 
