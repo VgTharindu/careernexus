@@ -14,6 +14,7 @@ import api from '../utils/api';
 export default function Login() {
   const [form,    setForm   ] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const { login }             = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const { addToast }          = useToast();
@@ -31,7 +32,9 @@ export default function Login() {
       else if (role === 'company') navigate('/company/dashboard');
       else if (role === 'admin')   navigate('/admin/dashboard');
     } catch (err) {
-      addToast(err.response?.data?.message || 'Login failed', 'error');
+      const msg = err.response?.data?.message || 'Login failed. Please try again.';
+      setError(msg);
+      addToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -46,7 +49,7 @@ export default function Login() {
   return (
   <div
     className="min-h-screen flex items-center justify-center p-4"
-    style={{ background: 'var(--color-bg-primary)' }}
+    style={{ background: 'var(--color-bg-primary)', overflow: 'hidden' }}
   >
     {/* Theme toggle */}
     <div className="absolute top-6 right-6">
@@ -61,15 +64,18 @@ export default function Login() {
 
     {/* Login card */}
     <div
-      className="w-full max-w-md rounded-2xl p-8 fade-in"
+      className="w-full max-w-md rounded-2xl fade-in"
       style={{
         background: 'var(--color-bg-secondary)',
         border:     '1px solid var(--color-border)',
         boxShadow:  '0 20px 60px rgba(0,0,0,0.3)',
+        padding:    '28px 32px',
+        maxHeight:  'calc(100vh - 40px)',
+        overflowY:  'auto',
       }}
     >
       {/* Logo */}
-      <div className="text-center mb-8">
+      <div className="text-center mb-4">
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
           style={{ background: 'linear-gradient(135deg, #007BFF, #00CCCC)' }}
@@ -88,7 +94,7 @@ export default function Login() {
       >
         Welcome back
       </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--color-text-muted)' }}>
+      <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
         Sign in to your CareerNexus account to continue
       </p>
 
@@ -105,7 +111,7 @@ export default function Login() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3">
         <Input
           label="Email Address"
           type="email"
@@ -148,7 +154,7 @@ export default function Login() {
         </Button>
       </form>
 
-      <div className="relative my-5">
+      <div className="relative my-3">
         <div className="absolute inset-0 flex items-center">
           <div className="w-full border-t" style={{ borderColor: 'var(--color-border)' }} />
         </div>
@@ -171,7 +177,7 @@ export default function Login() {
       </p>
 
       {/* Role hint badges */}
-      <div className="grid grid-cols-3 gap-2 mt-6">
+      <div className="grid grid-cols-3 gap-2 mt-4">
         {[
           { role: 'Student',  desc: 'Find internships',   color: '#007BFF' },
           { role: 'Company',  desc: 'Post jobs',          color: '#00CCCC' },
