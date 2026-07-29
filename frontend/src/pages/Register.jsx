@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useToast } from '../components/ui/Toast';
 import Input from '../components/ui/Input';
+import Button from '../components/ui/Button';
 import {
   Mail, Lock, User, Sun, Moon, Briefcase,
   GraduationCap, Building2, ArrowRight,
@@ -94,37 +95,37 @@ export default function Register() {
         background: 'var(--color-bg-secondary)',
         border:     '1px solid var(--color-border)',
         boxShadow:  '0 20px 60px rgba(0,0,0,0.3)',
-        padding:    '28px 32px',
+        padding:    '20px 28px',
         maxHeight:  'calc(100vh - 40px)',
         overflowY:  'auto',
       }}
     >
       {/* Logo */}
-      <div className="text-center mb-4">
+      <div className="text-center mb-2">
         <div
           className="w-12 h-12 rounded-2xl flex items-center justify-center mx-auto mb-3"
           style={{ background: 'linear-gradient(135deg, #007BFF, #00CCCC)' }}
         >
-          <Briefcase size={24} className="text-white" />
+          <Briefcase size={20} className="text-white" />
         </div>
-        <h1 className="text-2xl font-bold gradient-text">CareerNexus</h1>
+        <h1 className="text-xl font-bold gradient-text">CareerNexus</h1>
         <p className="text-xs mt-1" style={{ color: 'var(--color-text-muted)' }}>
           Smarter Hiring. Better Futures.
         </p>
       </div>
 
       <h2
-        className="text-xl font-bold mb-1"
+        className="text-lg font-bold mb-0.5"
         style={{ color: 'var(--color-text-primary)' }}
       >
         Create your account
       </h2>
-      <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>
+      <p className="text-sm mb-3" style={{ color: 'var(--color-text-muted)' }}>
         Free forever. No credit card required.
       </p>
 
       {/* Role selector */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
+      <div className="grid grid-cols-2 gap-2 mb-3">
         {[
           { value: 'student', label: 'Student', desc: 'Find internships & jobs',    icon: GraduationCap },
           { value: 'company', label: 'Company', desc: 'Post jobs & hire talent',    icon: Building2     },
@@ -133,7 +134,7 @@ export default function Register() {
             key={value}
             type="button"
             onClick={() => setForm({ ...form, role: value })}
-            className="p-3 rounded-xl text-left transition-all"
+            className="p-2 rounded-xl text-left transition-all"
             style={{
               border:     form.role === value ? '2px solid #007BFF' : '1px solid var(--color-border)',
               background: form.role === value ? 'rgba(0,123,255,0.08)' : 'var(--color-bg-primary)',
@@ -162,7 +163,7 @@ export default function Register() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3">
+      <form onSubmit={handleSubmit} className="space-y-2">
         <Input
           label="Full Name"
           type="text"
@@ -203,7 +204,7 @@ export default function Register() {
         </Button>
       </form>
 
-      <p className="text-center text-sm mt-4" style={{ color: 'var(--color-text-muted)' }}>
+      <p className="text-center text-sm mt-3" style={{ color: 'var(--color-text-muted)' }}>
         Already have an account?{' '}
         <Link
           to="/login"
